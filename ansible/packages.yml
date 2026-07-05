@@ -1,0 +1,42 @@
+- name: Ставим пакеты
+  hosts: vps
+  become: true
+  remote_user: deploy
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/deploy
+  tasks:
+    - name: Установка зависимостей
+      ansible.builtin.apt:
+        update_cache: true
+        name: 
+          - ca-certificates
+          - curl
+        state: present
+    - name: создать папку под GPG-ключ Docker
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+    - name: скачать GPG-ключ
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+    - name: добавить репо docker
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+    - name: Установка docker
+      ansible.builtin.apt:
+        update_cache: true
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - docker-compose-plugin
+          - containerd.io
+        state: present
+    - name: deploy в группу docker
+      ansible.builtin.user:
+        name: deploy
+        groups: docker
+        append: true
+        state: present

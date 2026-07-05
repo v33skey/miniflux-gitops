@@ -1,0 +1,47 @@
+- name: Создание юзеров deploy и v33skey(admin)
+  hosts: vps
+  become: true
+  remote_user: root
+  vars:
+    v33skey_passwd: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          31376231313433383235663062636564613832386330376433376139636233303366323335653833
+          3636316531616363326632326331373662393839636630370a636365373834626266363739323933
+          30306239353039653235343534633665323332366234646432613662666431303137643738623534
+          6438353866383839310a646339633430623137376632353665666435303861616331313564643164
+          61636561663635646631306164653433616139333739313234306266663333616236623032663535
+          39663335633535663036353262353566643536656334666539623433326439366362333837373734
+          33323036626634333639363938336265393534633035393134326161336436323361393565616430
+          64353437333064306539356665376239346430313534303534383633393134646433396162323165
+          31373865343330303961336130306537633663363566316134333963306636316331
+  tasks:
+    - name: deploy adduser
+      ansible.builtin.user:
+        name: deploy
+        state: present
+        append: true
+        groups: sudo
+    - name: deploy key 
+      ansible.posix.authorized_key:
+        user: deploy
+        key: "{{ lookup('file', '~/.ssh/deploy.pub')}}"
+    - name: sudoers nopasswd deploy
+      ansible.builtin.copy:
+        content: "deploy ALL=(ALL) NOPASSWD: ALL\n"
+        dest: "/etc/sudoers.d/deploy"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"
+    - name: v33skey adduser
+      ansible.builtin.user:
+        name: v33skey
+        state: present
+        password: "{{ v33skey_passwd }}"
+        append: true
+        groups: sudo
+    - name: v33skey key 
+      ansible.posix.authorized_key:
+        user: v33skey
+        key: "{{ lookup('file', '~/.ssh/admin.pub')}}"
+
