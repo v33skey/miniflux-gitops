@@ -1,0 +1,24 @@
+services:
+  miniflux: 
+    image: miniflux/miniflux:2.3.2
+    ports:
+      - "80:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: db.env
+
+  db:
+    image: postgres:18
+    env_file: db.env
+
+    volumes:
+      - miniflux-db:/var/lib/postgresql
+
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "miniflux"]
+      interval: 10s
+      start_period: 30s
+
+volumes:
+  miniflux-db:
